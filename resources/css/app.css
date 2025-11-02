@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* === Design tokens === */
+:root{
+  --brand-blue:#1F4E8C; --brand-red:#D72638; --brand-navy:#0E2A47;
+  --gray-900:#0F172A; --gray-700:#334155; --gray-500:#64748B;
+  --gray-300:#CBD5E1; --gray-200:#E5EAF1; --gray-100:#F4F6F9; --white:#fff;
+
+  --success:#16A34A; --warning:#D97706; --info:#0EA5E9; --danger:#D72638;
+
+  --radius:12px;             /* rounded look across the app */
+  --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+  --shadow-md:0 6px 16px rgba(2,6,23,.08);
+  --shadow-lg:0 16px 30px rgba(2,6,23,.12);
+
+  --focus-ring:0 0 0 0.2rem rgba(31,78,140,.25);
+}
+
+/* === Global === */
+html,body{height:100%}
+body{
+  background:var(--gray-100);
+  color:var(--gray-900);
+  -webkit-font-smoothing:antialiased;
+  font-family: "Inter","Segoe UI",system-ui,Arial,sans-serif;
+}
+a{ color:var(--brand-blue); }
+a:hover{ color:#184070; }
+
+/* Top navbar */
+.app-navbar.navbar{
+  background:var(--brand-navy)!important;
+  box-shadow: var(--shadow-sm);
+}
+.app-navbar .navbar-brand,
+.app-navbar .nav-link,
+.app-navbar .navbar-text{
+  color:var(--white)!important;
+  opacity:.95;
+}
+.app-navbar .nav-link.active,
+.app-navbar .nav-link:hover{ opacity:1 }
+
+/* Sidebar (optional; hide on mobile) */
+.app-sidebar{
+  background:var(--white);
+  border-right:1px solid var(--gray-200);
+  min-width:240px;
+}
+.app-sidebar .list-group-item{
+  border:0;
+  border-radius:10px;
+  margin:.15rem 0;
+  color:var(--gray-700);
+}
+.app-sidebar .list-group-item.active{
+  background:rgba(31,78,140,.1);
+  color:var(--brand-blue);
+  font-weight:600;
+}
+
+/* Content wrapper */
+.app-content{
+  padding:24px;
+}
+
+/* Cards */
+.card{
+  border:0;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+}
+.card-header{
+  background:var(--white);
+  border-bottom:1px solid var(--gray-200);
+  font-weight:600;
+}
+
+/* Tables */
+.table{
+  background:var(--white);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+}
+.table thead th{
+  background:#FAFBFC;
+  border-bottom:1px solid var(--gray-200);
+  color:var(--gray-700);
+  font-weight:600;
+}
+.table tbody tr:hover{ background:#FAFCFF; }
+
+/* Forms */
+.form-control, .form-select{
+  border-radius:10px;
+  border-color:var(--gray-300);
+}
+.form-control:focus, .form-select:focus{
+  box-shadow:var(--focus-ring);
+  border-color:var(--brand-blue);
+}
+
+/* Buttons – polished Bootstrap variants */
+.btn{ border-radius:10px; }
+.btn-primary{
+  background:var(--brand-blue);
+  border-color:var(--brand-blue);
+}
+.btn-primary:hover{
+  background:#184070;
+  border-color:#184070;
+}
+.btn-outline-primary{
+  color:var(--brand-blue);
+  border-color:var(--brand-blue);
+}
+.btn-outline-primary:hover{
+  background:var(--brand-blue);
+  color:#fff;
+}
+.btn-danger{ background:var(--brand-red); border-color:var(--brand-red) }
+
+/* Badges */
+.badge{
+  border-radius:999px;
+  font-weight:600;
+  padding:.45em .65em;
+}
+.badge.bg-secondary{ background:#EEF2F7!important; color:var(--gray-700)!important }
+
+/* Utilities */
+.shadow-md{ box-shadow:var(--shadow-md)!important }
+.shadow-lg{ box-shadow:var(--shadow-lg)!important }
+.rounded-xl{ border-radius:var(--radius)!important }
+.text-muted-700{ color:var(--gray-700)!important }
+
+/* Login box (if needed) */
+.auth-card{ max-width:420px; margin:auto; margin-top:8vh; }
