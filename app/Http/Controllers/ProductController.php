@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;  // Add this line
 
 class ProductController extends Controller
 {
@@ -30,13 +31,17 @@ class ProductController extends Controller
     {
         $categories = config('product_meta.categories');
         $uoms       = config('product_meta.uoms');
-        return view('products.create', compact('categories','uoms'));
+        
+        // Generate next SKU
+        $nextSku = $this->generateNextSku();
+        
+        return view('products.create', compact('categories','uoms', 'nextSku'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'sku'           => ['required','string','max:64','unique:products,sku'],
+            'sku'           => ['nullable','string','max:64','unique:products,sku'], // Make SKU nullable
             'name'          => ['required','string','max:255'],
             'description'   => ['nullable','string'],
             'category'      => ['required', Rule::in(config('product_meta.categories'))],
@@ -44,6 +49,11 @@ class ProductController extends Controller
             'reorder_point' => ['required','integer','min:0'],
             'is_active'     => ['required','boolean'],
         ]);
+
+        // Auto-generate SKU if not provided
+        if (empty($data['sku'])) {
+            $data['sku'] = $this->generateNextSku();
+        }
 
         $product = Product::create($data);
 
@@ -56,6 +66,33 @@ class ProductController extends Controller
         ]);
 
         return redirect()->route('products.index')->with('success','Product created.');
+    }
+
+    /**
+     * Generate next SKU in format: PRD-00001, PRD-00002, etc.
+     */
+    private function generateNextSku()
+    {
+        $latestProduct = DB::table('products')
+            ->orderByDesc('id')
+            ->first();
+        
+        if (!$latestProduct) {
+            return 'PRD-00001';
+        }
+
+        // Extract number from last SKU
+        $lastSku = $latestProduct->sku;
+        
+        // If SKU follows PRD-XXXXX format
+        if (preg_match('/PRD-(\d+)/', $lastSku, $matches)) {
+            $nextNum = (int)$matches[1] + 1;
+        } else {
+            // Fallback: use product ID
+            $nextNum = $latestProduct->id + 1;
+        }
+        
+        return 'PRD-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
     }
 
     public function edit(Product $product)

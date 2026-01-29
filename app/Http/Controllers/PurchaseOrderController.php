@@ -252,6 +252,7 @@ class PurchaseOrderController extends Controller
             ->select(
                 'poi.*',
                 'po.po_number',
+                'po.status as po_status',  // Add this line
                 'p.sku',
                 'p.name as product_name',
                 'w.code as wh_code',
