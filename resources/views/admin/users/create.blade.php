@@ -1,433 +1,969 @@
 {{-- resources/views/admin/users/create.blade.php --}}
 <x-app-layout>
-  <div class="container py-4" style="max-width: 720px;">
-
-    {{-- Header Section --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div class="d-flex align-items-center">
-        <div class="header-icon-wrapper me-3">
-          <i class="bi bi-person-plus-fill"></i>
-        </div>
-        <div>
-          <h1 class="h3 mb-1 fw-bold">Create New User</h1>
-          <p class="text-muted mb-0 small">Add a new user to the system</p>
-        </div>
-      </div>
-      <a href="{{ route('admin.users.index') }}" class="btn btn-back">
-        <i class="bi bi-arrow-left me-2"></i>Back
-      </a>
-    </div>
-
-    {{-- Error Alert --}}
-    @if ($errors->any())
-      <div class="alert alert-danger alert-dismissible fade show modern-alert mb-4" role="alert">
-        <div class="d-flex align-items-start">
-          <div class="alert-icon danger-icon me-3">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h6 class="alert-heading mb-2">Please fix the following errors:</h6>
-            <ul class="mb-0 ps-3">
-              @foreach ($errors->all() as $e) 
-                <li>{{ $e }}</li> 
-              @endforeach
-            </ul>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      </div>
-    @endif
-
-    {{-- Form Card --}}
-    <div class="card modern-card">
-      <div class="card-body p-4">
-        <form method="POST" action="{{ route('admin.users.store') }}" novalidate>
-          @csrf
-
-          {{-- Name Field --}}
-          <div class="mb-4">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-person text-primary me-2"></i>Full Name
-            </label>
-            <input
-              name="name"
-              class="form-control modern-input @error('name') is-invalid @enderror"
-              value="{{ old('name') }}"
-              placeholder="Enter user's full name"
-              required
-            >
-            @error('name') 
-              <div class="invalid-feedback d-flex align-items-center">
-                <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
-              </div>
-            @enderror
-          </div>
-
-          {{-- Email Field --}}
-          <div class="mb-4">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-envelope text-primary me-2"></i>Email Address
-            </label>
-            <input
-              name="email"
-              type="email"
-              class="form-control modern-input @error('email') is-invalid @enderror"
-              value="{{ old('email') }}"
-              placeholder="user@example.com"
-              required
-            >
-            @error('email') 
-              <div class="invalid-feedback d-flex align-items-center">
-                <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
-              </div>
-            @enderror
-          </div>
-
-          {{-- Role Field --}}
-          <div class="mb-4">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-shield-check text-primary me-2"></i>User Role
-            </label>
-            <select
-              name="role"
-              class="form-select modern-select @error('role') is-invalid @enderror"
-              required
-            >
-              <option value="" disabled {{ old('role') ? '' : 'selected' }}>Choose a role</option>
-              @foreach($roles as $r)
-                <option value="{{ $r }}" @selected(old('role') === $r)>
-                  {{ ucfirst($r) }}
-                </option>
-              @endforeach
-            </select>
-            @error('role') 
-              <div class="invalid-feedback d-flex align-items-center">
-                <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
-              </div>
-            @enderror
-            <div class="form-text">
-              <i class="bi bi-info-circle me-1"></i>Select the appropriate role for this user
-            </div>
-          </div>
-
-          {{-- Password Section --}}
-          <div class="password-section">
-            <div class="section-header mb-3">
-              <i class="bi bi-lock-fill me-2"></i>
-              <span class="fw-semibold">Security Credentials</span>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Password</label>
-              <div class="input-group modern-input-group">
-                <span class="input-group-text">
-                  <i class="bi bi-key"></i>
-                </span>
-                <input
-                  name="password"
-                  type="password"
-                  class="form-control @error('password') is-invalid @enderror"
-                  placeholder="Enter secure password"
-                  required
-                  autocomplete="new-password"
-                  id="password"
-                >
-                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-              @error('password') 
-                <div class="invalid-feedback d-flex align-items-center mt-1">
-                  <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
-                </div>
-              @enderror
-              <div class="form-text">
-                <i class="bi bi-info-circle me-1"></i>Minimum 8 characters recommended
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Confirm Password</label>
-              <div class="input-group modern-input-group">
-                <span class="input-group-text">
-                  <i class="bi bi-key-fill"></i>
-                </span>
-                <input
-                  name="password_confirmation"
-                  type="password"
-                  class="form-control"
-                  placeholder="Re-enter password"
-                  required
-                  autocomplete="new-password"
-                  id="password_confirmation"
-                >
-                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password_confirmation">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {{-- Action Buttons --}}
-          <div class="d-flex gap-3 pt-3 border-top">
-            <a href="{{ route('admin.users.index') }}" class="btn btn-cancel flex-grow-1">
-              <i class="bi bi-x-circle me-2"></i>Cancel
-            </a>
-            <button type="submit" class="btn btn-create flex-grow-1">
-              <i class="bi bi-check-circle me-2"></i>Create User
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-  </div>
-
   <style>
-    :root {
-      --primary-color: #6366f1;
-      --success-color: #10b981;
-      --danger-color: #ef4444;
-      --text-dark: #1f2937;
-      --text-muted: #6b7280;
-      --bg-light: #f9fafb;
-      --border-color: #e5e7eb;
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-      --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    /* ===== Create User Page Styles ===== */
+    .create-user-page {
+      padding: 0;
     }
 
-    /* Header Styling */
-    .header-icon-wrapper {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, var(--primary-color), #818cf8);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      color: white;
-      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
-    }
-
-    .btn-back {
-      background: white;
-      border: 2px solid var(--border-color);
-      color: var(--text-dark);
-      padding: 8px 20px;
-      border-radius: 10px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .btn-back:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      transform: translateX(-4px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    /* Modern Alert */
-    .modern-alert {
-      border: none;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: var(--shadow-md);
-    }
-
-    .alert-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .danger-icon {
-      background: #fee2e2;
-      color: var(--danger-color);
-    }
-
-    .alert-heading {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--danger-color);
-    }
-
-    /* Modern Card */
-    .modern-card {
-      border: none;
-      border-radius: 16px;
-      box-shadow: var(--shadow-lg);
+    /* ===== Page Header ===== */
+    .page-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      border-radius: 20px;
+      padding: 32px 40px;
+      margin-bottom: 28px;
+      position: relative;
       overflow: hidden;
     }
 
-    /* Form Labels */
-    .form-label {
-      color: var(--text-dark);
-      margin-bottom: 8px;
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: 10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .page-header-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .page-title-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .page-icon i {
+      font-size: 24px;
+      color: white;
+    }
+
+    .page-title {
+      color: white;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+      color: #94a3b8;
+      font-size: 1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-subtitle i {
       font-size: 14px;
     }
 
-    .form-label i {
-      font-size: 16px;
-    }
-
-    /* Modern Inputs */
-    .modern-input,
-    .modern-select {
-      border: 2px solid var(--border-color);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 15px;
-      transition: all 0.3s ease;
-    }
-
-    .modern-input:focus,
-    .modern-select:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-      outline: none;
-    }
-
-    .modern-input.is-invalid,
-    .modern-select.is-invalid {
-      border-color: var(--danger-color);
-    }
-
-    .modern-input.is-invalid:focus,
-    .modern-select.is-invalid:focus {
-      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-    }
-
-    /* Input Group */
-    .modern-input-group .input-group-text {
-      background: var(--bg-light);
-      border: 2px solid var(--border-color);
-      border-right: none;
-      border-radius: 10px 0 0 10px;
-      color: var(--text-muted);
-    }
-
-    .modern-input-group .form-control {
-      border: 2px solid var(--border-color);
-      border-left: none;
-      border-right: none;
-      padding: 12px 16px;
-      font-size: 15px;
-    }
-
-    .modern-input-group .toggle-password {
-      border: 2px solid var(--border-color);
-      border-left: none;
-      border-radius: 0 10px 10px 0;
-      background: white;
-      color: var(--text-muted);
-      transition: all 0.3s ease;
-    }
-
-    .modern-input-group .toggle-password:hover {
-      background: var(--bg-light);
-      color: var(--text-dark);
-    }
-
-    .modern-input-group .form-control:focus {
-      border-color: var(--primary-color);
-      box-shadow: none;
-    }
-
-    .modern-input-group .form-control:focus ~ .toggle-password {
-      border-color: var(--primary-color);
-    }
-
-    .modern-input-group:focus-within .input-group-text {
-      border-color: var(--primary-color);
-    }
-
-    /* Password Section */
-    .password-section {
-      background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
 
-    .section-header {
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: white;
+      transform: translateX(-4px);
+    }
+
+    .btn-back i {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-back:hover i {
+      transform: translateX(-4px);
+    }
+
+    /* ===== Alert Error ===== */
+    .alert-error-custom {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border: 1px solid #fecaca;
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1);
+    }
+
+    .alert-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
-      color: var(--text-dark);
-      font-size: 15px;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    .section-header i {
-      color: var(--primary-color);
+    .alert-icon.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .alert-icon i {
+      color: white;
+      font-size: 22px;
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #991b1b;
+      margin-bottom: 8px;
+    }
+
+    .alert-list {
+      margin: 0;
+      padding-left: 20px;
+      color: #b91c1c;
+      font-size: 14px;
+    }
+
+    .alert-list li {
+      margin-bottom: 4px;
+    }
+
+    .alert-close {
+      background: rgba(153, 27, 27, 0.1);
+      border: none;
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #991b1b;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .alert-close:hover {
+      background: rgba(153, 27, 27, 0.2);
+    }
+
+    /* ===== Form Card ===== */
+    .form-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+    }
+
+    .form-card:hover {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-card-header {
+      padding: 28px 32px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .header-icon i {
+      color: white;
+      font-size: 22px;
+    }
+
+    .header-text h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+
+    .header-text p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .form-card-body {
+      padding: 32px;
+    }
+
+    /* ===== Form Grid ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .form-grid .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* ===== Section Divider ===== */
+    .section-divider {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 8px 0;
+    }
+
+    .section-divider-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-divider-icon i {
+      color: #64748b;
       font-size: 18px;
     }
 
-    /* Form Text */
-    .form-text {
-      color: var(--text-muted);
+    .section-divider-text {
       font-size: 13px;
-      margin-top: 6px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    /* Invalid Feedback */
-    .invalid-feedback {
-      display: block;
-      color: var(--danger-color);
+    .section-divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #e2e8f0, transparent);
+    }
+
+    /* ===== Form Groups ===== */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-label {
       font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      font-weight: 700;
+    }
+
+    .form-label i {
+      color: #6366f1;
+      font-size: 16px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 18px;
+      transition: color 0.3s ease;
+      z-index: 1;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px 14px 50px;
+      font-size: 15px;
+      font-weight: 500;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+      color: #0f172a;
+    }
+
+    .form-input::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .form-input:hover {
+      border-color: #cbd5e1;
+      background: white;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-input:focus + .input-icon,
+    .input-wrapper:focus-within .input-icon {
+      color: #6366f1;
+    }
+
+    .form-input.is-invalid {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .form-input.is-invalid:focus {
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+
+    /* ===== Select Input ===== */
+    .form-select {
+      width: 100%;
+      padding: 14px 16px 14px 50px;
+      font-size: 15px;
+      font-weight: 500;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+      color: #0f172a;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 12px;
+    }
+
+    .form-select:hover {
+      border-color: #cbd5e1;
+      background-color: white;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: #6366f1;
+      background-color: white;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-select.is-invalid {
+      border-color: #ef4444;
+      background-color: #fef2f2;
+    }
+
+    /* ===== Password Input Group ===== */
+    .password-input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-input-group .form-input {
+      padding-right: 50px;
+    }
+
+    .btn-toggle-password {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .btn-toggle-password:hover {
+      color: #6366f1;
+    }
+
+    .btn-toggle-password i {
+      font-size: 18px;
+    }
+
+    /* ===== Form Help Text ===== */
+    .form-help {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .form-help i {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    /* ===== Error Message ===== */
+    .invalid-feedback {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #dc2626;
       font-weight: 500;
     }
 
-    /* Action Buttons */
-    .btn-cancel {
+    .invalid-feedback i {
+      font-size: 14px;
+    }
+
+    /* ===== Role Cards ===== */
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .role-option {
+      position: relative;
+    }
+
+    .role-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .role-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .role-card:hover {
+      border-color: #cbd5e1;
       background: white;
-      border: 2px solid var(--border-color);
-      color: var(--text-dark);
-      padding: 12px 24px;
+    }
+
+    .role-option input[type="radio"]:checked + .role-card {
+      border-color: #6366f1;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    }
+
+    .role-option input[type="radio"]:checked + .role-card .role-icon {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .role-option input[type="radio"]:checked + .role-card .role-icon i {
+      color: white;
+    }
+
+    .role-option input[type="radio"]:checked + .role-card .role-name {
+      color: #4338ca;
+    }
+
+    .role-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
       border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .role-icon i {
+      color: #64748b;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .role-icon.admin { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+    .role-icon.admin i { color: #dc2626; }
+
+    .role-icon.manager { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+    .role-icon.manager i { color: #7c3aed; }
+
+    .role-icon.clerk { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+    .role-icon.clerk i { color: #d97706; }
+
+    .role-icon.viewer { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+    .role-icon.viewer i { color: #2563eb; }
+
+    .role-info {
+      flex: 1;
+    }
+
+    .role-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .role-desc {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* ===== Form Card Footer ===== */
+    .form-card-footer {
+      padding: 24px 32px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+    }
+
+    .btn-cancel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      color: #64748b;
+      font-size: 15px;
       font-weight: 600;
+      text-decoration: none;
       transition: all 0.3s ease;
     }
 
     .btn-cancel:hover {
-      border-color: var(--danger-color);
-      color: var(--danger-color);
+      border-color: #ef4444;
+      color: #ef4444;
+      background: #fef2f2;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
     }
 
-    .btn-create {
-      background: linear-gradient(135deg, var(--primary-color), #818cf8);
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       border: none;
+      border-radius: 12px;
       color: white;
-      padding: 12px 24px;
-      border-radius: 10px;
+      font-size: 15px;
       font-weight: 600;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      cursor: pointer;
       transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     }
 
-    .btn-create:hover {
+    .btn-submit:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
     }
 
-    /* Responsive */
-    @media (max-width: 576px) {
-      .d-flex.gap-3 {
+    .btn-submit i {
+      font-size: 18px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .page-header {
+        padding: 24px;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .page-header-content {
         flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .page-title-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .btn-back {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-card-body {
+        padding: 24px;
+      }
+
+      .form-card-footer {
+        flex-direction: column;
+        padding: 20px 24px;
+      }
+
+      .btn-cancel,
+      .btn-submit {
+        width: 100%;
+        justify-content: center;
       }
     }
   </style>
 
+  <div class="create-user-page">
+    {{-- Page Header --}}
+    <div class="page-header">
+      <div class="page-header-content">
+        <div class="page-title-section">
+          <div class="page-icon">
+            <i class="bi bi-person-plus-fill"></i>
+          </div>
+          <div>
+            <h1 class="page-title">Create User</h1>
+            <p class="page-subtitle">
+              <i class="bi bi-person-badge"></i>
+              Add a new user account to the system
+            </p>
+          </div>
+        </div>
+        <a href="{{ route('admin.users.index') }}" class="btn-back">
+          <i class="bi bi-arrow-left"></i>
+          Back to Users
+        </a>
+      </div>
+    </div>
+
+    {{-- Error Alert --}}
+    @if ($errors->any())
+      <div class="alert-error-custom">
+        <div class="alert-icon error">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <div class="alert-title">Please fix the following errors:</div>
+          <ul class="alert-list">
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+          </ul>
+        </div>
+        <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    @endif
+
+    {{-- Form --}}
+    <form method="POST" action="{{ route('admin.users.store') }}" novalidate>
+      @csrf
+
+      <div class="form-card">
+        <div class="form-card-header">
+          <div class="header-icon">
+            <i class="bi bi-person-vcard"></i>
+          </div>
+          <div class="header-text">
+            <h3>User Information</h3>
+            <p>Fill in the required details for the new user</p>
+          </div>
+        </div>
+
+        <div class="form-card-body">
+          <div class="form-grid">
+            {{-- Name --}}
+            <div class="form-group full-width">
+              <label class="form-label">
+                <i class="bi bi-person"></i>
+                Full Name <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <i class="bi bi-person input-icon"></i>
+                <input
+                  type="text"
+                  name="name"
+                  class="form-input @error('name') is-invalid @enderror"
+                  placeholder="Enter user's full name"
+                  value="{{ old('name') }}"
+                  required
+                >
+              </div>
+              @error('name')
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle"></i>
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+
+            {{-- Email --}}
+            <div class="form-group full-width">
+              <label class="form-label">
+                <i class="bi bi-envelope"></i>
+                Email Address <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <i class="bi bi-envelope input-icon"></i>
+                <input
+                  type="email"
+                  name="email"
+                  class="form-input @error('email') is-invalid @enderror"
+                  placeholder="user@example.com"
+                  value="{{ old('email') }}"
+                  required
+                >
+              </div>
+              @error('email')
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle"></i>
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+
+            {{-- Role Section --}}
+            <div class="section-divider">
+              <div class="section-divider-icon">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <span class="section-divider-text">User Role</span>
+              <div class="section-divider-line"></div>
+            </div>
+
+            {{-- Role Selection --}}
+            <div class="form-group full-width">
+              <label class="form-label">
+                <i class="bi bi-shield-lock"></i>
+                Select Role <span class="required">*</span>
+              </label>
+              <div class="role-grid">
+                @foreach($roles as $role)
+                  @php
+                    $roleClass = match($role) {
+                      'Admin' => 'admin',
+                      'Inventory Manager' => 'manager',
+                      'Clerk' => 'clerk',
+                      'Viewer' => 'viewer',
+                      default => 'viewer'
+                    };
+                    $roleIcon = match($role) {
+                      'Admin' => 'bi-shield-check',
+                      'Inventory Manager' => 'bi-person-gear',
+                      'Clerk' => 'bi-person-badge',
+                      'Viewer' => 'bi-eye',
+                      default => 'bi-person'
+                    };
+                    $roleDesc = match($role) {
+                      'Admin' => 'Full system access',
+                      'Inventory Manager' => 'Manage inventory',
+                      'Clerk' => 'Basic operations',
+                      'Viewer' => 'Read-only access',
+                      default => ''
+                    };
+                  @endphp
+                  <div class="role-option">
+                    <input 
+                      type="radio" 
+                      name="role" 
+                      value="{{ $role }}" 
+                      id="role_{{ Str::slug($role) }}"
+                      @checked(old('role') === $role)
+                    >
+                    <label for="role_{{ Str::slug($role) }}" class="role-card">
+                      <div class="role-icon {{ $roleClass }}">
+                        <i class="bi {{ $roleIcon }}"></i>
+                      </div>
+                      <div class="role-info">
+                        <div class="role-name">{{ $role }}</div>
+                        <div class="role-desc">{{ $roleDesc }}</div>
+                      </div>
+                    </label>
+                  </div>
+                @endforeach
+              </div>
+              @error('role')
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle"></i>
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+
+            {{-- Password Section --}}
+            <div class="section-divider">
+              <div class="section-divider-icon">
+                <i class="bi bi-lock"></i>
+              </div>
+              <span class="section-divider-text">Security Credentials</span>
+              <div class="section-divider-line"></div>
+            </div>
+
+            {{-- Password --}}
+            <div class="form-group">
+              <label class="form-label">
+                <i class="bi bi-key"></i>
+                Password <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <i class="bi bi-lock input-icon"></i>
+                <div class="password-input-group">
+                  <input
+                    type="password"
+                    name="password"
+                    id="password"
+                    class="form-input @error('password') is-invalid @enderror"
+                    placeholder="Enter secure password"
+                    required
+                    autocomplete="new-password"
+                  >
+                  <button type="button" class="btn-toggle-password" data-target="password">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-help">
+                <i class="bi bi-info-circle"></i>
+                Minimum 8 characters recommended
+              </div>
+              @error('password')
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle"></i>
+                  {{ $message }}
+                </div>
+              @enderror
+            </div>
+
+            {{-- Confirm Password --}}
+            <div class="form-group">
+              <label class="form-label">
+                <i class="bi bi-key-fill"></i>
+                Confirm Password <span class="required">*</span>
+              </label>
+              <div class="input-wrapper">
+                <i class="bi bi-lock-fill input-icon"></i>
+                <div class="password-input-group">
+                  <input
+                    type="password"
+                    name="password_confirmation"
+                    id="password_confirmation"
+                    class="form-input"
+                    placeholder="Re-enter password"
+                    required
+                    autocomplete="new-password"
+                  >
+                  <button type="button" class="btn-toggle-password" data-target="password_confirmation">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-help">
+                <i class="bi bi-info-circle"></i>
+                Must match the password above
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card-footer">
+          <a href="{{ route('admin.users.index') }}" class="btn-cancel">
+            <i class="bi bi-x-circle"></i>
+            Cancel
+          </a>
+          <button type="submit" class="btn-submit">
+            <i class="bi bi-check-circle"></i>
+            Create User
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <script>
     // Toggle password visibility
-    document.querySelectorAll('.toggle-password').forEach(button => {
+    document.querySelectorAll('.btn-toggle-password').forEach(button => {
       button.addEventListener('click', function() {
         const targetId = this.getAttribute('data-target');
         const input = document.getElementById(targetId);

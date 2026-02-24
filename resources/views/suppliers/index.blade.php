@@ -1,208 +1,790 @@
+<?php>
 <x-app-layout>
-  <div class="container py-4">
+  <style>
+    /* ===== Suppliers Page Styles ===== */
+    .suppliers-page {
+      padding: 0;
+    }
 
-    {{-- Flash --}}
-    @if(session('success'))
-      <div class="alert alert-success border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%); border-radius: 12px;">
-        <div class="d-flex align-items-center gap-3">
-          <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: rgba(40, 167, 69, 0.2); border-radius: 10px;">
-            <i class="bi bi-check-circle-fill text-success fs-5"></i>
-          </div>
-          <span class="fw-medium" style="color: #155724;">{{ session('success') }}</span>
+    /* ===== Page Header ===== */
+    .page-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      border-radius: 20px;
+      padding: 32px 40px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: 10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .page-header-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .page-title {
+      color: white;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+      color: #94a3b8;
+      font-size: 1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-new {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-new:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+      color: white;
+    }
+
+    .btn-new i {
+      font-size: 18px;
+    }
+
+    /* ===== Alert Success ===== */
+    .alert-success-custom {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 1px solid #6ee7b7;
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+    }
+
+    .alert-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-icon.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .alert-icon i {
+      color: white;
+      font-size: 22px;
+    }
+
+    .alert-content {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 500;
+      color: #065f46;
+    }
+
+    .alert-close {
+      background: rgba(6, 95, 70, 0.1);
+      border: none;
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #065f46;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .alert-close:hover {
+      background: rgba(6, 95, 70, 0.2);
+    }
+
+    /* ===== Search Card ===== */
+    .search-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .search-form {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .search-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .search-input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-group i {
+      position: absolute;
+      left: 16px;
+      color: #94a3b8;
+      font-size: 18px;
+      z-index: 1;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 14px 16px 14px 50px;
+      font-size: 15px;
+      font-weight: 500;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+      color: #0f172a;
+    }
+
+    .search-input::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .search-input:hover {
+      border-color: #cbd5e1;
+      background: white;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .btn-search {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      color: #475569;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-search:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+      background: white;
+    }
+
+    .btn-clear {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      color: #64748b;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-clear:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: #fef2f2;
+    }
+
+    /* ===== Data Card ===== */
+    .data-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
+    }
+
+    .data-card:hover {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ===== Table ===== */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table thead {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .data-table thead th {
+      padding: 16px 24px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: none;
+      text-align: left;
+    }
+
+    .data-table thead th.text-center {
+      text-align: center;
+    }
+
+    .data-table thead th.text-end {
+      text-align: right;
+    }
+
+    .data-table tbody tr {
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .data-table tbody tr:hover {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(139, 92, 246, 0.02) 100%);
+    }
+
+    .data-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .data-table tbody td {
+      padding: 18px 24px;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .data-table tbody td.text-center {
+      text-align: center;
+    }
+
+    .data-table tbody td.text-end {
+      text-align: right;
+    }
+
+    /* ===== Supplier Badge ===== */
+    .supplier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .supplier-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+
+    .supplier-icon i {
+      color: white;
+      font-size: 18px;
+    }
+
+    .supplier-name {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 15px;
+    }
+
+    /* ===== Email Link ===== */
+    .email-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .email-link:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
+    .email-link i {
+      font-size: 16px;
+    }
+
+    /* ===== Phone ===== */
+    .phone-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .phone-text i {
+      color: #94a3b8;
+    }
+
+    /* ===== Status Badges ===== */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-badge.active {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+    }
+
+    .status-badge.inactive {
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      color: #64748b;
+    }
+
+    /* ===== Action Buttons ===== */
+    .action-group {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn-edit {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-edit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+      color: white;
+    }
+
+    .btn-delete {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      color: #64748b;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-delete:hover {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+      transform: translateY(-2px);
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      padding: 80px 24px;
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      border-radius: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .empty-state-icon i {
+      font-size: 44px;
+      color: #94a3b8;
+    }
+
+    .empty-state-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+      color: #64748b;
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    .btn-empty-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-empty-action:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+      color: white;
+    }
+
+    /* ===== Pagination ===== */
+    .pagination-wrapper {
+      padding: 20px 24px;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Override Laravel Pagination Styles */
+    .pagination {
+      display: flex;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .pagination .page-item .page-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      height: 40px;
+      padding: 0 14px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .pagination .page-item .page-link:hover {
+      background: #f8fafc;
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+
+    .pagination .page-item.active .page-link {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .pagination .page-item.disabled .page-link {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      color: #cbd5e1;
+      cursor: not-allowed;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .page-header {
+        padding: 24px;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .page-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .btn-new {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .search-form {
+        flex-direction: column;
+      }
+
+      .search-input-wrapper {
+        width: 100%;
+        min-width: unset;
+      }
+
+      .btn-search {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .data-table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .action-group {
+        flex-direction: column;
+      }
+
+      .btn-edit, .btn-delete {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+
+  <div class="suppliers-page">
+    {{-- Page Header --}}
+    <div class="page-header">
+      <div class="page-header-content">
+        <div>
+          <h1 class="page-title">Suppliers</h1>
+          <p class="page-subtitle">
+            <i class="bi bi-truck"></i>
+            Manage supplier contacts and status
+          </p>
         </div>
+        <a href="{{ route('suppliers.create') }}" class="btn-new">
+          <i class="bi bi-plus-circle"></i>
+          New Supplier
+        </a>
+      </div>
+    </div>
+
+    {{-- Success Alert --}}
+    @if (session('success'))
+      <div class="alert-success-custom">
+        <div class="alert-icon success">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <div class="alert-content">{{ session('success') }}</div>
+        <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
     @endif
 
-    {{-- Header --}}
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-      <div>
-        <h1 class="mb-1 fw-bold" style="font-size: 2rem; color: #1a202c;">Suppliers</h1>
-        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-          <i class="bi bi-truck me-1"></i>Manage supplier contacts and status
-        </p>
-      </div>
-      <a class="btn btn-brand d-flex align-items-center gap-2 px-4 py-2 mt-3 mt-md-0" href="{{ route('suppliers.create') }}" style="border-radius: 10px; font-weight: 500;">
-        <i class="bi bi-plus-circle"></i> New Supplier
-      </a>
-    </div>
-
-    {{-- Search --}}
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-      <div class="card-body p-4">
-        <form method="GET">
-          <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-8 col-lg-6">
-              <label class="form-label small text-muted fw-semibold mb-2">Search Suppliers</label>
-              <div class="input-group" style="border-radius: 10px; overflow: hidden;">
-                <span class="input-group-text bg-white border-end-0" style="border: 2px solid #e5e7eb; border-right: none;">
-                  <i class="bi bi-search text-muted"></i>
-                </span>
-                <input class="form-control border-start-0 ps-0" name="q" value="{{ $q ?? '' }}" 
-                       placeholder="Search by name, email or phone..." 
-                       style="border: 2px solid #e5e7eb; border-left: none; box-shadow: none;">
-                @if($q ?? '')
-                  <a href="{{ route('suppliers.index') }}" class="btn btn-outline-secondary" style="border-radius: 0 10px 10px 0;">
-                    <i class="bi bi-x-lg"></i>
-                  </a>
-                @endif
-              </div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-outline-secondary px-4" style="border-radius: 10px; font-weight: 500; border: 2px solid #e5e7eb;">
-                <i class="bi bi-funnel me-1"></i> Search
-              </button>
-            </div>
+    {{-- Search Card --}}
+    <div class="search-card">
+      <form method="GET" class="search-form">
+        <div class="search-input-wrapper">
+          <label class="search-label">Search Suppliers</label>
+          <div class="search-input-group">
+            <i class="bi bi-search"></i>
+            <input 
+              type="text" 
+              name="q" 
+              class="search-input" 
+              value="{{ $q ?? '' }}" 
+              placeholder="Search by name, email or phone..."
+            >
           </div>
-        </form>
-      </div>
+        </div>
+        <button type="submit" class="btn-search">
+          <i class="bi bi-funnel"></i>
+          Search
+        </button>
+        @if($q ?? '')
+          <a href="{{ route('suppliers.index') }}" class="btn-clear">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        @endif
+      </form>
     </div>
 
-    {{-- Table card --}}
-    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background: #f8f9fa;">
-              <tr>
-                <th class="border-0 text-muted small fw-semibold py-3 px-4" style="min-width:220px;">Name</th>
-                <th class="border-0 text-muted small fw-semibold py-3" style="min-width:220px;">Email</th>
-                <th class="border-0 text-muted small fw-semibold py-3" style="min-width:140px;">Phone</th>
-                <th class="border-0 text-muted small fw-semibold py-3" style="width:120px;">Status</th>
-                <th class="border-0 text-muted small fw-semibold py-3 text-end px-4" style="width:200px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              @forelse($suppliers as $s)
-                <tr style="border-bottom: 1px solid #f1f3f5;">
-                  <td class="px-4 py-3">
-                    <div class="d-flex align-items-center gap-3">
-                      <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 10px;">
-                        <i class="bi bi-truck text-white"></i>
-                      </div>
-                      <span class="fw-bold" style="color: #1a202c;">{{ $s->name }}</span>
-                    </div>
-                  </td>
-                  <td class="py-3">
-                    @if($s->email)
-                      <a href="mailto:{{ $s->email }}" class="text-decoration-none d-flex align-items-center gap-2" style="color: #3b82f6;">
-                        <i class="bi bi-envelope"></i>
-                        <span>{{ $s->email }}</span>
-                      </a>
-                    @else
-                      <span class="text-muted">—</span>
-                    @endif
-                  </td>
-                  <td class="py-3">
-                    @if($s->phone)
-                      <div class="d-flex align-items-center gap-2 text-muted">
-                        <i class="bi bi-telephone"></i>
-                        <span>{{ $s->phone }}</span>
-                      </div>
-                    @else
-                      <span class="text-muted">—</span>
-                    @endif
-                  </td>
-                  <td class="py-3">
-                    @if($s->is_active)
-                      <span class="badge d-inline-flex align-items-center gap-1 px-3 py-2" 
-                            style="background: #d1fae5; color: #065f46; border-radius: 8px; font-weight: 500; font-size: 0.8rem;">
-                        <i class="bi bi-check-circle-fill"></i> Active
-                      </span>
-                    @else
-                      <span class="badge d-inline-flex align-items-center gap-1 px-3 py-2" 
-                            style="background: #e5e7eb; color: #4b5563; border-radius: 8px; font-weight: 500; font-size: 0.8rem;">
-                        <i class="bi bi-slash-circle"></i> Inactive
-                      </span>
-                    @endif
-                  </td>
-                  <td class="py-3 text-end px-4">
-                    <div class="btn-group" role="group">
-                      <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-3" 
-                         href="{{ route('suppliers.edit',$s) }}"
-                         style="border-radius: 8px 0 0 8px; font-weight: 500; border: 2px solid #3b82f6;">
-                        <i class="bi bi-pencil-square"></i> Edit
-                      </a>
-                      <form method="POST" action="{{ route('suppliers.destroy',$s) }}" class="d-inline"
-                            onsubmit="return confirm('Are you sure you want to delete this supplier?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 px-3"
-                                style="border-radius: 0 8px 8px 0; font-weight: 500; border: 2px solid #ef4444; border-left: 1px solid #ef4444;">
-                          <i class="bi bi-trash"></i> Delete
-                        </button>
-                      </form>
-                    </div>
-                  </td>
-                </tr>
-              @empty
-                <tr>
-                  <td colspan="5" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;">
-                      <div class="d-flex align-items-center justify-content-center mb-3" 
-                           style="width: 64px; height: 64px; background: #f3f4f6; border-radius: 16px;">
-                        <i class="bi bi-truck text-muted" style="font-size: 2rem; opacity: 0.5;"></i>
-                      </div>
-                      <h5 class="fw-semibold mb-2" style="color: #6b7280;">No suppliers found</h5>
-                      <p class="text-muted mb-3">Get started by adding your first supplier</p>
-                      <a href="{{ route('suppliers.create') }}" class="btn btn-brand px-4" style="border-radius: 10px;">
-                        <i class="bi bi-plus-circle me-1"></i> Add Supplier
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              @endforelse
-            </tbody>
-          </table>
-        </div>
-      </div>
+    {{-- Suppliers Table --}}
+    <div class="data-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($suppliers as $s)
+            <tr>
+              <td>
+                <div class="supplier-badge">
+                  <div class="supplier-icon">
+                    <i class="bi bi-truck"></i>
+                  </div>
+                  <span class="supplier-name">{{ $s->name }}</span>
+                </div>
+              </td>
+              <td>
+                @if($s->email)
+                  <a href="mailto:{{ $s->email }}" class="email-link">
+                    <i class="bi bi-envelope"></i>
+                    {{ $s->email }}
+                  </a>
+                @else
+                  <span style="color: #94a3b8;">—</span>
+                @endif
+              </td>
+              <td>
+                @if($s->phone)
+                  <div class="phone-text">
+                    <i class="bi bi-telephone"></i>
+                    {{ $s->phone }}
+                  </div>
+                @else
+                  <span style="color: #94a3b8;">—</span>
+                @endif
+              </td>
+              <td class="text-center">
+                @if($s->is_active)
+                  <span class="status-badge active">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Active
+                  </span>
+                @else
+                  <span class="status-badge inactive">
+                    <i class="bi bi-slash-circle"></i>
+                    Inactive
+                  </span>
+                @endif
+              </td>
+              <td>
+                <div class="action-group">
+                  <a href="{{ route('suppliers.edit', $s) }}" class="btn-edit">
+                    <i class="bi bi-pencil-square"></i>
+                    Edit
+                  </a>
+                  <form action="{{ route('suppliers.destroy', $s) }}" method="POST"
+                        onsubmit="return confirm('Are you sure you want to delete this supplier?');">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn-delete">
+                      <i class="bi bi-trash"></i>
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <div class="empty-state-icon">
+                    <i class="bi bi-truck"></i>
+                  </div>
+                  <h4 class="empty-state-title">No suppliers found</h4>
+                  <p class="empty-state-text">Get started by adding your first supplier</p>
+                  <a href="{{ route('suppliers.create') }}" class="btn-empty-action">
+                    <i class="bi bi-plus-circle"></i>
+                    Add Supplier
+                  </a>
+                </div>
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
 
       {{-- Pagination --}}
       @if($suppliers->hasPages())
-        <div class="card-footer bg-white border-0 py-3 px-4">
-          <div class="d-flex justify-content-end">
-            {{ $suppliers->links() }}
-          </div>
+        <div class="pagination-wrapper">
+          {{ $suppliers->links() }}
         </div>
       @endif
     </div>
-
   </div>
-
-  <style>
-    .card:hover {
-      box-shadow: 0 8px 25px rgba(0,0,0,0.08) !important;
-    }
-    
-    .btn {
-      transition: all 0.2s ease;
-    }
-    
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-    
-    .table tbody tr {
-      transition: background-color 0.15s ease;
-    }
-    
-    .table tbody tr:hover {
-      background-color: #f8f9fa;
-    }
-    
-    .btn-group .btn:hover {
-      z-index: 2;
-    }
-    
-    .input-group:focus-within {
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-      border-radius: 10px;
-    }
-    
-    .form-control:focus {
-      box-shadow: none !important;
-    }
-
-    a[href^="mailto:"]:hover {
-      text-decoration: underline !important;
-    }
-  </style>
 </x-app-layout>

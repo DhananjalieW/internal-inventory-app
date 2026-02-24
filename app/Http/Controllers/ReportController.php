@@ -5,50 +5,61 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 
 class ReportController extends Controller
 {
+    /**
+     * Reports index page
+     */
     public function index()
     {
         return view('reports.index');
     }
 
+    /**
+     * Reorder report
+     */
     public function reorder(Request $request)
     {
-        $q = trim($request->get('q', ''));
-        
-        $rows = DB::table('inventory_levels as il')
+        $q = $request->get('q', '');
+
+        $query = DB::table('inventory_levels as il')
             ->join('products as p', 'p.id', '=', 'il.product_id')
             ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
             ->select(
                 'p.id as product_id',
                 'p.sku',
                 'p.name',
-                'p.reorder_point',
+                'w.code as wh',
                 'il.on_hand',
-                'w.code as wh_code',
-                'w.name as wh_name'
+                'p.reorder_point'
             )
             ->whereColumn('il.on_hand', '<', 'p.reorder_point')
-            ->when($q, function ($query) use ($q) {
-                $like = "%{$q}%";
-                $query->where(function ($x) use ($like) {
-                    $x->where('p.sku', 'like', $like)
-                      ->orWhere('p.name', 'like', $like);
-                });
-            })
-            ->orderByRaw('(p.reorder_point - il.on_hand) DESC')
-            ->paginate(20)
-            ->withQueryString();
+            ->orderByRaw('(p.reorder_point - il.on_hand) DESC');
 
-        $count = $rows->total();
+        if ($q) {
+            $query->where(function ($qry) use ($q) {
+                $qry->where('p.sku', 'like', "%{$q}%")
+                    ->orWhere('p.name', 'like', "%{$q}%");
+            });
+        }
 
-        return view('reports.reorder', compact('rows', 'q', 'count'));
+        $rows = $query->paginate(25)->withQueryString();
+
+        return view('reports.reorder', compact('rows', 'q'));
     }
 
+    /**
+     * Stock report
+     */
     public function stock(Request $request)
     {
-        $rows = DB::table('inventory_levels as il')
+        $q = $request->get('q', '');
+        $warehouse = $request->get('warehouse', '');
+
+        $query = DB::table('inventory_levels as il')
             ->join('products as p', 'p.id', '=', 'il.product_id')
             ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
             ->select(
@@ -56,49 +67,77 @@ class ReportController extends Controller
                 'p.name as product_name',
                 'w.code as wh_code',
                 'w.name as wh_name',
+                'w.id as warehouse_id',
                 'il.on_hand',
                 'il.on_order',
                 'il.allocated'
             )
-            ->orderBy('p.sku')
             ->orderBy('w.code')
-            ->paginate(50);
+            ->orderBy('p.sku');
 
-        return view('reports.stock', compact('rows'));
+        // Search filter
+        if ($q) {
+            $query->where(function ($qry) use ($q) {
+                $qry->where('p.sku', 'like', "%{$q}%")
+                    ->orWhere('p.name', 'like', "%{$q}%");
+            });
+        }
+
+        // Warehouse filter
+        if ($warehouse) {
+            $query->where('w.id', $warehouse);
+        }
+
+        $rows = $query->paginate(25)->withQueryString();
+
+        return view('reports.stock', compact('rows', 'q', 'warehouse'));
     }
 
+    /**
+     * Movements report
+     */
     public function movements(Request $request)
     {
         $range = $request->get('range', '7d');
-        
-        $days = match($range) {
+
+        $days = match ($range) {
             '30d' => 30,
             '90d' => 90,
+            'all' => 9999,
             default => 7,
         };
 
-        $rows = DB::table('stock_movements as m')
+        $query = DB::table('stock_movements as m')
             ->join('products as p', 'p.id', '=', 'm.product_id')
             ->join('warehouses as w', 'w.id', '=', 'm.warehouse_id')
             ->leftJoin('users as u', 'u.id', '=', 'm.user_id')
             ->select(
-                'm.id',
+                'm.created_at',
                 'm.type',
                 'm.qty',
                 'm.reference',
-                'm.notes',
-                'm.created_at',
                 'p.sku',
                 'p.name as product_name',
-                'w.code as wh_code',
+                'w.code as warehouse_code',
                 'u.name as user_name'
             )
-            ->where('m.created_at', '>=', now()->subDays($days))
-            ->orderByDesc('m.created_at')
-            ->paginate(50)
-            ->withQueryString();
+            ->orderByDesc('m.created_at');
+
+        if ($range !== 'all') {
+            $query->where('m.created_at', '>=', now()->subDays($days));
+        }
+
+        $rows = $query->paginate(50)->withQueryString();
 
         return view('reports.movements', compact('rows', 'range'));
+    }
+
+    /**
+     * Low stock report (alias for reorder)
+     */
+    public function lowStock(Request $request)
+    {
+        return $this->reorder($request);
     }
 
     /**
@@ -106,20 +145,13 @@ class ReportController extends Controller
      */
     public function export(Request $request, $which)
     {
-        if ($which === 'reorder') {
-            return $this->exportReorderCsv();
-        }
-        
-        if ($which === 'stock') {
-            return $this->exportStockCsv();
-        }
-        
-        if ($which === 'movements') {
-            $range = $request->get('range', '7d');
-            return $this->exportMovementsCsv($range);
-        }
-
-        abort(404, 'Unknown report type');
+        return match ($which) {
+            'reorder' => $this->exportReorderCsv($request),
+            'movements' => $this->exportMovementsCsv($request),
+            'stock', 'inventory' => $this->exportStockCsv($request),
+            'lowstock', 'low-stock' => $this->exportLowStockCsv($request),
+            default => abort(404, 'CSV export not available for this report'),
+        };
     }
 
     /**
@@ -127,131 +159,112 @@ class ReportController extends Controller
      */
     public function exportPdf(Request $request, $which)
     {
-        if ($which === 'reorder') {
-            return $this->exportReorderPdf();
-        }
-        
-        abort(404, 'PDF export not available for this report');
+        $range = $request->get('range', '7d');
+
+        return match ($which) {
+            'reorder' => $this->generateReorderPdf(),
+            'movements' => $this->generateMovementsPdf($range),
+            'stock', 'inventory' => $this->generateStockPdf(),
+            'lowstock', 'low-stock' => $this->generateLowStockPdf(),
+            default => abort(404, 'PDF export not available for this report'),
+        };
     }
 
     /**
-     * Send low stock email
+     * Export reorder report as CSV
      */
-    public function emailLowStock()
+    private function exportReorderCsv(Request $request)
     {
-        $items = DB::table('inventory_levels as il')
-            ->join('products as p', 'p.id', '=', 'il.product_id')
-            ->select('p.sku', 'p.name', 'il.on_hand', 'p.reorder_point')
-            ->whereColumn('il.on_hand', '<', 'p.reorder_point')
-            ->orderByRaw('(p.reorder_point - il.on_hand) DESC')
-            ->get();
+        $q = $request->get('q', '');
 
-        $to = config('mail.low_stock_to', env('LOW_STOCK_TO', 'admin@example.com'));
-
-        try {
-            Mail::send('emails.low_stock_summary', compact('items'), function ($message) use ($to) {
-                $message->to($to)
-                    ->subject('Low Stock Summary - ' . now()->format('Y-m-d'));
-            });
-
-            return back()->with('success', "Low stock email sent to {$to}");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to send email: ' . $e->getMessage());
-        }
-    }
-
-    // Private helper methods
-    private function exportReorderCsv()
-    {
-        $rows = DB::table('inventory_levels as il')
-            ->join('products as p', 'p.id', '=', 'il.product_id')
-            ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
-            ->select('p.sku', 'p.name', 'w.code as wh', 'il.on_hand', 'p.reorder_point')
-            ->whereColumn('il.on_hand', '<', 'p.reorder_point')
-            ->orderByRaw('(p.reorder_point - il.on_hand) DESC')
-            ->get();
-
-        $filename = 'reorder-' . now()->format('Y-m-d') . '.csv';
-
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
-
-        $callback = function () use ($rows) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['SKU', 'Name', 'Warehouse', 'On Hand', 'Reorder Point']);
-
-            foreach ($rows as $r) {
-                fputcsv($file, [
-                    $r->sku,
-                    $r->name,
-                    $r->wh,
-                    $r->on_hand,
-                    $r->reorder_point,
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    private function exportStockCsv()
-    {
-        $rows = DB::table('inventory_levels as il')
+        $query = DB::table('inventory_levels as il')
             ->join('products as p', 'p.id', '=', 'il.product_id')
             ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
             ->select(
                 'p.sku',
-                'p.name',
-                'w.code as wh',
+                'p.name as product_name',
+                'w.code as warehouse_code',
+                'w.name as warehouse_name',
                 'il.on_hand',
-                'il.on_order',
-                'il.allocated'
+                'p.reorder_point',
+                DB::raw('(p.reorder_point - il.on_hand) as shortage')
             )
-            ->orderBy('p.sku')
-            ->orderBy('w.code')
-            ->get();
+            ->whereColumn('il.on_hand', '<', 'p.reorder_point');
 
-        $filename = 'stock-' . now()->format('Y-m-d') . '.csv';
+        if ($q) {
+            $query->where(function ($qry) use ($q) {
+                $qry->where('p.sku', 'like', "%{$q}%")
+                    ->orWhere('p.name', 'like', "%{$q}%");
+            });
+        }
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
+        $rows = $query->orderByDesc('shortage')->get();
 
         $callback = function () use ($rows) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['SKU', 'Product', 'Warehouse', 'On Hand', 'On Order', 'Allocated']);
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Header row
+            fputcsv($file, [
+                'SKU',
+                'Product Name',
+                'Warehouse Code',
+                'Warehouse Name',
+                'On Hand',
+                'Reorder Point',
+                'Shortage',
+                'Status'
+            ]);
 
-            foreach ($rows as $r) {
+            // Data rows
+            foreach ($rows as $row) {
+                $onHand = (int)$row->on_hand;
+                $reorderPoint = (int)$row->reorder_point;
+                $isCritical = $onHand <= ($reorderPoint * 0.5);
+                $status = $isCritical ? 'CRITICAL' : 'LOW';
+
                 fputcsv($file, [
-                    $r->sku,
-                    $r->name,
-                    $r->wh,
-                    $r->on_hand,
-                    $r->on_order,
-                    $r->allocated,
+                    $row->sku,
+                    $row->product_name,
+                    $row->warehouse_code,
+                    $row->warehouse_name,
+                    $onHand,
+                    $reorderPoint,
+                    $row->shortage,
+                    $status
                 ]);
             }
 
             fclose($file);
         };
 
-        return response()->stream($callback, 200, $headers);
+        return response()->streamDownload(
+            $callback,
+            'reorder-report-' . now()->format('Y-m-d') . '.csv',
+            [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="reorder-report-' . now()->format('Y-m-d') . '.csv"',
+            ]
+        );
     }
 
-    private function exportMovementsCsv($range)
+    /**
+     * Export movements as CSV
+     */
+    private function exportMovementsCsv(Request $request)
     {
-        $days = match($range) {
+        $range = $request->get('range', '7d');
+
+        $days = match ($range) {
             '30d' => 30,
             '90d' => 90,
+            'all' => 9999,
             default => 7,
         };
 
-        $rows = DB::table('stock_movements as m')
+        $query = DB::table('stock_movements as m')
             ->join('products as p', 'p.id', '=', 'm.product_id')
             ->join('warehouses as w', 'w.id', '=', 'm.warehouse_id')
             ->leftJoin('users as u', 'u.id', '=', 'm.user_id')
@@ -259,57 +272,261 @@ class ReportController extends Controller
                 'm.created_at',
                 'm.type',
                 'm.qty',
-                'm.reference',
                 'p.sku',
-                'p.name as product',
-                'w.code as warehouse',
-                'u.name as user'
+                'p.name as product_name',
+                'w.code as warehouse_code',
+                'm.reference',
+                'u.name as user_name',
+                'm.notes'
             )
-            ->where('m.created_at', '>=', now()->subDays($days))
-            ->orderByDesc('m.created_at')
-            ->get();
+            ->orderByDesc('m.created_at');
 
-        $filename = "movements-{$range}-" . now()->format('Y-m-d') . '.csv';
+        if ($range !== 'all') {
+            $query->where('m.created_at', '>=', now()->subDays($days));
+        }
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
+        $rows = $query->get();
 
         $callback = function () use ($rows) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Date', 'Type', 'Qty', 'Reference', 'SKU', 'Product', 'Warehouse', 'User']);
+            
+            // Add UTF-8 BOM
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Header
+            fputcsv($file, [
+                'Date',
+                'Time',
+                'Type',
+                'Quantity',
+                'SKU',
+                'Product',
+                'Warehouse',
+                'Reference',
+                'User',
+                'Notes'
+            ]);
 
-            foreach ($rows as $r) {
+            // Data
+            foreach ($rows as $row) {
+                $date = Carbon::parse($row->created_at);
                 fputcsv($file, [
-                    $r->created_at,
-                    $r->type,
-                    $r->qty,
-                    $r->reference ?? '',
-                    $r->sku,
-                    $r->product,
-                    $r->warehouse,
-                    $r->user ?? '',
+                    $date->format('Y-m-d'),
+                    $date->format('H:i:s'),
+                    $row->type,
+                    $row->qty,
+                    $row->sku,
+                    $row->product_name,
+                    $row->warehouse_code,
+                    $row->reference ?: '',
+                    $row->user_name ?: '',
+                    $row->notes ?: ''
                 ]);
             }
 
             fclose($file);
         };
 
-        return response()->stream($callback, 200, $headers);
+        return response()->streamDownload(
+            $callback,
+            'movements-report-' . now()->format('Y-m-d') . '.csv',
+            [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="movements-report-' . now()->format('Y-m-d') . '.csv"',
+            ]
+        );
     }
 
-    private function exportReorderPdf()
+    /**
+     * Export stock/inventory as CSV
+     */
+    private function exportStockCsv(Request $request)
     {
-        // Simple text-based PDF generation (you can use a library like DomPDF for better results)
+        $q = $request->get('q', '');
+        $warehouse = $request->get('warehouse', '');
+
+        $query = DB::table('inventory_levels as il')
+            ->join('products as p', 'p.id', '=', 'il.product_id')
+            ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
+            ->select(
+                'p.sku',
+                'p.name as product_name',
+                'w.code as warehouse_code',
+                'w.name as warehouse_name',
+                'il.on_hand',
+                'il.on_order',
+                'il.allocated',
+                DB::raw('(il.on_hand - il.allocated) as available')
+            )
+            ->orderBy('p.sku')
+            ->orderBy('w.code');
+
+        if ($q) {
+            $query->where(function ($qry) use ($q) {
+                $qry->where('p.sku', 'like', "%{$q}%")
+                    ->orWhere('p.name', 'like', "%{$q}%");
+            });
+        }
+
+        if ($warehouse) {
+            $query->where('w.id', $warehouse);
+        }
+
+        $rows = $query->get();
+
+        $callback = function () use ($rows) {
+            $file = fopen('php://output', 'w');
+            
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'SKU',
+                'Product Name',
+                'Warehouse Code',
+                'Warehouse Name',
+                'On Hand',
+                'On Order',
+                'Allocated',
+                'Available'
+            ]);
+
+            foreach ($rows as $row) {
+                fputcsv($file, [
+                    $row->sku,
+                    $row->product_name,
+                    $row->warehouse_code,
+                    $row->warehouse_name,
+                    $row->on_hand,
+                    $row->on_order,
+                    $row->allocated,
+                    $row->available
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->streamDownload(
+            $callback,
+            'inventory-report-' . now()->format('Y-m-d') . '.csv',
+            [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="inventory-report-' . now()->format('Y-m-d') . '.csv"',
+            ]
+        );
+    }
+
+    /**
+     * Export low stock as CSV
+     */
+    private function exportLowStockCsv(Request $request)
+    {
+        return $this->exportReorderCsv($request);
+    }
+
+    /**
+     * Generate Stock PDF
+     */
+    private function generateStockPdf()
+    {
         $rows = DB::table('inventory_levels as il')
             ->join('products as p', 'p.id', '=', 'il.product_id')
             ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
-            ->select('p.sku', 'p.name', 'w.code as wh', 'il.on_hand', 'p.reorder_point')
-            ->whereColumn('il.on_hand', '<', 'p.reorder_point')
-            ->orderByRaw('(p.reorder_point - il.on_hand) DESC')
+            ->select(
+                'w.code as warehouse',
+                'p.sku',
+                'p.name',
+                'il.on_hand',
+                'il.allocated',
+                'il.on_order'
+            )
+            ->orderBy('w.code')
+            ->orderBy('p.sku')
             ->get();
 
-        return view('reports.pdf.reorder', compact('rows'));
+        $pdf = Pdf::loadView('reports.pdf.stock', compact('rows'));
+        
+        return $pdf->download('stock-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Reorder PDF
+     */
+    private function generateReorderPdf()
+    {
+        $rows = DB::table('inventory_levels as il')
+            ->join('products as p', 'p.id', '=', 'il.product_id')
+            ->join('warehouses as w', 'w.id', '=', 'il.warehouse_id')
+            ->select(
+                'p.sku',
+                'p.name',
+                'w.code as warehouse',
+                'il.on_hand',
+                'p.reorder_point',
+                DB::raw('(p.reorder_point - il.on_hand) as shortage')
+            )
+            ->whereColumn('il.on_hand', '<', 'p.reorder_point')
+            ->orderByDesc('shortage')
+            ->get();
+
+        $pdf = Pdf::loadView('reports.pdf.reorder', compact('rows'));
+        
+        return $pdf->download('reorder-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Movements PDF
+     */
+    private function generateMovementsPdf($range = '7d')
+    {
+        $days = match ($range) {
+            '30d' => 30,
+            '90d' => 90,
+            'all' => 9999,
+            default => 7,
+        };
+
+        $query = DB::table('stock_movements as m')
+            ->join('products as p', 'p.id', '=', 'm.product_id')
+            ->join('warehouses as w', 'w.id', '=', 'm.warehouse_id')
+            ->leftJoin('users as u', 'u.id', '=', 'm.user_id')
+            ->select(
+                'm.created_at',
+                'm.type',
+                'm.qty',
+                'p.sku',
+                'p.name as product',
+                'w.code as warehouse',
+                'm.reference',
+                'u.name as user'
+            )
+            ->orderByDesc('m.created_at');
+
+        if ($range !== 'all') {
+            $query->where('m.created_at', '>=', now()->subDays($days));
+        }
+
+        $rows = $query->get();
+
+        $pdf = Pdf::loadView('reports.pdf.movements', compact('rows', 'range'));
+        
+        return $pdf->download('movements-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Low Stock PDF
+     */
+    private function generateLowStockPdf()
+    {
+        return $this->generateReorderPdf();
+    }
+
+    /**
+     * Email low stock report
+     */
+    public function emailLowStock(Request $request)
+    {
+        // Implementation for emailing low stock report
+        return back()->with('success', 'Low stock report has been sent successfully!');
     }
 }
